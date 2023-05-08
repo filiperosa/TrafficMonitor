@@ -1,10 +1,10 @@
 #
 import sys
 import argparse
-from typing import List
+from typing import List, Tuple
 from traffic_monitor.log import Log
 
-# Buffer to store logs from last 2 minutes
+# Buffer to store logs from last 2 minutes or custom defined window
 log_buffer: List[Log] = []
 
 # Chunk of X seconds of logs (default 10 seconds)
@@ -118,21 +118,23 @@ def stats(logs: List[Log]):
     print()
     
 
-def alerts(logs: List[Log], threshold: int):
+def alerts(logs: List[Log], threshold: int) -> Tuple[int, bool]:
     """Compute alerts for a list of logs"""
     
     global high_traffic
     global zero_timestamp
 
-    # If there are no logs at different times, return
+    # If no logs, return 0 requests per second
+    if not len(logs):
+        return (0, high_traffic)
+
     first_time = logs[0].timestamp
     last_time = logs[len(logs)-1].timestamp
-    if last_time == first_time:
-        return
-
-    exact_duration = last_time - first_time
+    exact_duration = 1
+    if last_time != first_time:
+        exact_duration = last_time - first_time
+    
     requests_per_second = len(logs)/exact_duration
-    # print(f"requests_per_second: {requests_per_second}")
 
     # Requests per second is above threshold
     if(not high_traffic and requests_per_second > threshold):
@@ -143,6 +145,8 @@ def alerts(logs: List[Log], threshold: int):
     elif(high_traffic and requests_per_second <= threshold):
         print(f"High traffic alert recovered at {logs[len(logs) - 1].timestamp - zero_timestamp} seconds\n")
         high_traffic = False
+
+    return (requests_per_second, high_traffic)
 
 
 

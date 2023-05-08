@@ -12,7 +12,7 @@ class Log:
     request: str
     status: int
     bytes: int
-    section:str = field(init=False)
+    section: str = field(init=False)
 
     def __post_init__(self):
         # init section field
