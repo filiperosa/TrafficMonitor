@@ -2,14 +2,13 @@ from typing import Optional, Type
 from dataclasses import dataclass, field
 import re
 
-def optional_field():
-    return field(metadata={"convert_": lambda x: x if x != "-" else None})
-
 @dataclass
 class Log:
+    """ log of HTTP request """
+
     remotehost: str
-    rfc931: Optional[str] = optional_field()
-    authuser: Optional[str] = optional_field()
+    rfc931: Optional[str]
+    authuser: Optional[str]
     timestamp: int
     request: str
     status: int
