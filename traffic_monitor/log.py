@@ -1,6 +1,5 @@
 from typing import Optional, Type
 from dataclasses import dataclass, field
-import re
 
 @dataclass
 class Log:
