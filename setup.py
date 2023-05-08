@@ -11,6 +11,7 @@ setup(
     version=__version__,
     packages=['traffic_monitor'],
     install_requires=[
+        'dataclasses',
         'pytest',
     ],
     python_requires='>=3.6',
@@ -21,7 +22,7 @@ setup(
     long_description_content_type='text/markdown',
     entry_points={
         'console_scripts': [
-            'monitor=traffic_monitor.monitor:main'
+            'monitor=traffic_monitor.monitor:monitor'
         ]
     }
 )
