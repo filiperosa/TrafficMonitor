@@ -1,7 +1,7 @@
 import pytest
 from traffic_monitor.log import Log
 from traffic_monitor.log_collection import LogCollection
-import traffic_monitor.monitor as monitor
+from traffic_monitor import alerts
 
 # Create a list of logs
 logs = [
@@ -33,9 +33,9 @@ logs = [
 def test_alert_high_traffic():
     """Test alerts"""
 
-    monitor.high_traffic = False
+    alerts.high_traffic = False
     log_window = LogCollection(logs)
-    reqs_per_sec, high_traffic = monitor.alerts(log_window, 10)
+    reqs_per_sec, high_traffic = alerts.check_high_traffic(log_window, 10)
     
     assert reqs_per_sec == 22
     assert high_traffic == True
@@ -43,9 +43,9 @@ def test_alert_high_traffic():
 def test_alert_back_to_normal():
     """Test alerts"""
 
-    monitor.high_traffic = True
+    alerts.high_traffic = True
 
-    reqs_per_sec, high_traffic = monitor.alerts(LogCollection(logs[8:15]), 10)
+    reqs_per_sec, high_traffic = alerts.check_high_traffic(LogCollection(logs[8:15]), 10)
     
     assert reqs_per_sec < 10
     assert high_traffic == False
@@ -53,9 +53,9 @@ def test_alert_back_to_normal():
 def test_alert_one_log_only():
     """Test alerts"""
 
-    monitor.high_traffic = True
+    alerts.high_traffic = True
     log_window = LogCollection([Log("10.0.0.3","-","apache",1549573860,"GET /report HTTP/1.0",200,1194)])
-    reqs_per_sec, high_traffic = monitor.alerts(log_window, 1)
+    reqs_per_sec, high_traffic = alerts.check_high_traffic(log_window, 1)
     
     assert reqs_per_sec == 1
     assert high_traffic == False
@@ -63,19 +63,19 @@ def test_alert_one_log_only():
 def test_alert_empty_logs():
     """Test alerts"""
 
-    monitor.high_traffic = True
+    alerts.high_traffic = True
 
-    reqs_per_sec, high_traffic = monitor.alerts(LogCollection(), 1)
+    reqs_per_sec, high_traffic = alerts.check_high_traffic(LogCollection(), 1)
     
     assert reqs_per_sec == 0
-    assert high_traffic == monitor.high_traffic
+    assert high_traffic == alerts.high_traffic
 
 def test_alert_threshold_zero():
     """Test alerts"""
 
-    monitor.high_traffic = False
+    alerts.high_traffic = False
     log_window = LogCollection(logs)
-    reqs_per_sec, high_traffic = monitor.alerts(log_window, 0)
+    reqs_per_sec, high_traffic = alerts.check_high_traffic(log_window, 0)
     
     assert reqs_per_sec > 0
     assert high_traffic == True
@@ -83,9 +83,9 @@ def test_alert_threshold_zero():
 def test_alert_threshold_negative():
     """Test alerts"""
 
-    monitor.high_traffic = False
+    alerts.high_traffic = False
     log_window = LogCollection(logs)
-    reqs_per_sec, high_traffic = monitor.alerts(log_window, -1)
+    reqs_per_sec, high_traffic = alerts.check_high_traffic(log_window, -1)
     
     assert reqs_per_sec > -1
     assert high_traffic == True
@@ -93,10 +93,10 @@ def test_alert_threshold_negative():
 def test_alert_raise_exception():
     """Test alerts"""
 
-    monitor.high_traffic = False
+    alerts.high_traffic = False
     log_window = LogCollection(logs)
     with pytest.raises(TypeError):
-        reqs_per_sec, high_traffic = monitor.alerts(log_window, "a")
+        reqs_per_sec, high_traffic = alerts.check_high_traffic(log_window, "a")
 
 
 
