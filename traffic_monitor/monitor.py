@@ -66,7 +66,7 @@ def monitor():
             log_chunk.append(log)
 
             # Compute alerts
-            check_high_traffic(log_window, args.threshold)
+            check_high_traffic(log_window, args.threshold, zero_timestamp + TIME_OFFSET)
 
     # Print stats for last chunk
     stats(log_chunk)

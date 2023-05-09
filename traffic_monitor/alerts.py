@@ -4,7 +4,7 @@ from traffic_monitor.log_collection import LogCollection
 # High traffic flag
 high_traffic = False
 
-def check_high_traffic(logs: LogCollection, threshold: int) -> Tuple[int, bool]:
+def check_high_traffic(logs: LogCollection, threshold: int, zero_timestamp=0) -> Tuple[int, bool]:
     """Compute alerts for a list of logs"""
     
     global high_traffic
@@ -23,12 +23,12 @@ def check_high_traffic(logs: LogCollection, threshold: int) -> Tuple[int, bool]:
 
     # Requests per second is above threshold
     if(not high_traffic and requests_per_second > threshold):
-        print(f"High traffic generated an alert - hits = {len(logs)}, triggered at {last_time} seconds\n")
+        print(f"High traffic generated an alert - hits = {len(logs)}, triggered at {last_time} seconds ({last_time + zero_timestamp})\n")
         high_traffic = True
     
     # Requests per second is back below threshold
     elif(high_traffic and requests_per_second <= threshold):
-        print(f"High traffic alert recovered at {last_time} seconds\n")
+        print(f"High traffic alert recovered at {last_time} seconds ({last_time + zero_timestamp})\n")
         high_traffic = False
 
     return (requests_per_second, high_traffic)

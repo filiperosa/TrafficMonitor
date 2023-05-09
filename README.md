@@ -1,10 +1,10 @@
 # Traffic Monitor
 
-This project is an HTTP traffic monitor reading a csv file or stdin
+This project is an HTTP traffic monitor consuming request logs from a csv file or stdin
 
 ## Requirements
 
-pytest, python 3.7+
+pytest, dataclasses, python 3.7+
 
 ## Installation
 
@@ -70,6 +70,13 @@ To run tests, we can use pytest
   $ pytest
 ```
 
+## Performance choices
+
+- Input data is consumed line by line,to avoid loading the whole file into memory
+- Only a rolling window of logs is kept in memory with the default duration of 2 minutes, this can be changed with the --window argument
+- The rolling window is implemented as a custom list that keeps track of oldest and newest elements, when a new element is added, the oldest is removed and we look for the new oldest element only in the vicinity of the list head, this is done to avoid iterating over the whole list
+- Only relative timestamps are kept in memory to speed up prints and naked eye comparisons
+
 ## Potential Improvements
 
 - Add plotting and more visual presentation of the stats (e.g.: like htop improves the interface of top)
@@ -81,8 +88,7 @@ To run tests, we can use pytest
 - Output statistics and alerts to files
 
 
-
-## Authors
+## Author
 
 - [@filiperosa](https://www.github.com/filiperosa)
 
