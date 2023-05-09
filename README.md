@@ -92,3 +92,5 @@ To run tests, we can use pytest
 
 - [@filiperosa](https://www.github.com/filiperosa)
 
+#### Time spent: aprox 5 active hours
+
