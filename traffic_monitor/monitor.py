@@ -3,24 +3,24 @@ import sys
 import argparse
 from typing import List, Tuple
 from traffic_monitor.log import Log
+from traffic_monitor.log_collection import LogCollection
 
-# Buffer to store logs from last 2 minutes or custom defined window
-log_buffer: List[Log] = []
+TIME_OFFSET = 10
+
+# List to store logs from last 2 minutes or custom defined window
+log_window = LogCollection()
 
 # Chunk of X seconds of logs (default 10 seconds)
-log_chunk: List[Log] = []
+log_chunk = LogCollection()
 
 # High traffic flag
 high_traffic = False
 
-# Timesamp of first log
-zero_timestamp = None
 
 def get_args() -> argparse.Namespace:
     """Parse command line arguments"""
 
     parser = argparse.ArgumentParser(description='HTTP traffic monitor from a csv file or stdin')
-    # parser.add_argument('requests', type=str, help='HTTP requests', nargs='*')
     parser.add_argument('input_file', type=argparse.FileType('r'), default=sys.stdin, nargs="?")
     parser.add_argument('--threshold', type=str, help='Expected average requests per second', default=10)
     parser.add_argument('--timeout', type=int, help='Time limit to wait for new logs', default=60)
@@ -37,7 +37,9 @@ def get_args() -> argparse.Namespace:
 def monitor():
     """Iterate over logs and compute stats and alerts"""
 
-    global zero_timestamp
+    # Timesamp of first log
+    zero_timestamp = None
+    
     args = get_args()
 
     with args.input_file as f:
@@ -48,31 +50,32 @@ def monitor():
             values = [eval(value) for value in line.split(',')]
             log = Log(*values)
 
+            # Only store relative timestamps to save memory
             if not zero_timestamp:
-                zero_timestamp = log.timestamp
+                zero_timestamp = log.timestamp - TIME_OFFSET
+            log.timestamp -= zero_timestamp
 
             # Remove logs older than window minutes
-            while(len(log_buffer) and (log.timestamp - log_buffer[0].timestamp) > args.window*60):
-                log_buffer.pop(0)
-            log_buffer.append(log)
+            while(len(log_window) and (log.timestamp - log_window.get_oldest().timestamp) > args.window*60):
+                log_window.pop_oldest()
+            log_window.append(log)
 
             # If log_chunk is full, print stats end empty list
-            if(len(log_chunk) and (log.timestamp - log_chunk[0].timestamp) > args.chunksize):
+            if(len(log_chunk) and (log.timestamp - log_chunk.get_oldest().timestamp) > args.chunksize):
                 stats(log_chunk)
                 log_chunk.clear()
             log_chunk.append(log)
 
             # Compute alerts
-            alerts(log_buffer, args.threshold)
-    
+            alerts(log_window, args.threshold)
+
     # Print stats for last chunk
     stats(log_chunk)
 
 
-def stats(logs: List[Log]):
+def stats(logs: LogCollection):
     """Compute stats for a list of logs"""
 
-    global zero_timestamp
     sections = {}
     request_types = {}
     total_requests = len(logs)
@@ -100,8 +103,8 @@ def stats(logs: List[Log]):
     # Sort request types by hits
     request_types = {k: v for k, v in sorted(request_types.items(), key=lambda item: item[1], reverse=True)}
 
-    first_time = logs[0].timestamp - zero_timestamp
-    last_time = logs[len(logs)-1].timestamp - zero_timestamp
+    first_time = logs.get_oldest().timestamp
+    last_time = logs.get_newest().timestamp
     print(f"Stats from seconds {first_time} to {last_time} ({last_time - first_time} seconds)")
 
     print(f"Total requests: {total_requests}")
@@ -118,18 +121,17 @@ def stats(logs: List[Log]):
     print()
     
 
-def alerts(logs: List[Log], threshold: int) -> Tuple[int, bool]:
+def alerts(logs: LogCollection, threshold: int) -> Tuple[int, bool]:
     """Compute alerts for a list of logs"""
     
     global high_traffic
-    global zero_timestamp
 
     # If no logs, return 0 requests per second
     if not len(logs):
         return (0, high_traffic)
 
-    first_time = logs[0].timestamp
-    last_time = logs[len(logs)-1].timestamp
+    first_time = logs.get_oldest().timestamp
+    last_time = logs.get_newest().timestamp
     exact_duration = 1
     if last_time != first_time:
         exact_duration = last_time - first_time
@@ -138,12 +140,12 @@ def alerts(logs: List[Log], threshold: int) -> Tuple[int, bool]:
 
     # Requests per second is above threshold
     if(not high_traffic and requests_per_second > threshold):
-        print(f"High traffic generated an alert - hits = {len(logs)}, triggered at {logs[len(logs) - 1].timestamp - zero_timestamp} seconds\n")
+        print(f"High traffic generated an alert - hits = {len(logs)}, triggered at {last_time} seconds\n")
         high_traffic = True
     
     # Requests per second is back below threshold
     elif(high_traffic and requests_per_second <= threshold):
-        print(f"High traffic alert recovered at {logs[len(logs) - 1].timestamp - zero_timestamp} seconds\n")
+        print(f"High traffic alert recovered at {last_time} seconds\n")
         high_traffic = False
 
     return (requests_per_second, high_traffic)
