@@ -46,17 +46,20 @@ def monitor():
         f.readline()
 
         for line in f:
-            values = [eval(value) for value in line.split(',')]
-            log = Log(*values)
-
-            # Only store relative timestamps to save memory
-            if not zero_timestamp:
-                zero_timestamp = log.timestamp - TIME_OFFSET
-            log.timestamp -= zero_timestamp
+            try:
+                host, rfc, user, time, req, status, size = line.replace('"', '').split(',')
+                log = Log(host, rfc, user, int(time), req, int(status), int(size))
+            except Exception as err:
+                print(f"Error parsing line: {line}")
+                raise err
 
             # Remove logs older than window minutes
             while(len(log_window) and (log.timestamp - log_window.get_oldest().timestamp) > args.window*60):
                 log_window.pop_oldest()
+
+                # Initialize zero_timestamp with oldest log if not initialized already
+                if not zero_timestamp:
+                    zero_timestamp = log_window.get_oldest().timestamp
             log_window.append(log)
 
             # If log_chunk is full, print stats end empty list
@@ -67,7 +70,7 @@ def monitor():
             log_chunk.append(log)
 
             # Compute alerts
-            check_high_traffic(log_window, args.threshold, zero_timestamp + TIME_OFFSET)
+            check_high_traffic(log_window, args.threshold, zero_timestamp)
 
     # Print stats for last chunk
     stats = Stats(log_chunk)
