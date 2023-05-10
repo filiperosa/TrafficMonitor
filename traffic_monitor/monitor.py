@@ -21,7 +21,7 @@ def get_args() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(description='HTTP traffic monitor from a csv file or stdin')
     parser.add_argument('input_file', type=argparse.FileType('r'), default=sys.stdin, nargs="?")
-    parser.add_argument('--threshold', type=str, help='Expected average requests per second', default=10)
+    parser.add_argument('--threshold', type=int, help='Expected average requests per second', default=10)
     parser.add_argument('--timeout', type=int, help='Time limit to wait for new logs', default=60)
     parser.add_argument('--chunksize', type=int, help='Duration of log chunks used for printing stats, default is 10 seconds', default=10)
     parser.add_argument('--window', type=int, help='Time window of logs kept in memory, default is 2 minutes', default=2)
