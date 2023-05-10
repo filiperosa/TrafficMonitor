@@ -4,7 +4,7 @@ import argparse
 from typing import List, Tuple
 from traffic_monitor.log import Log
 from traffic_monitor.log_collection import LogCollection
-from traffic_monitor.stats import stats
+from traffic_monitor.stats import Stats
 from traffic_monitor.alerts import check_high_traffic
 
 TIME_OFFSET = 10
@@ -61,7 +61,8 @@ def monitor():
 
             # If log_chunk is full, print stats end empty list
             if(len(log_chunk) and (log.timestamp - log_chunk.get_oldest().timestamp) > args.chunksize):
-                stats(log_chunk)
+                stats = Stats(log_chunk)
+                print(stats)
                 log_chunk.clear()
             log_chunk.append(log)
 
@@ -69,7 +70,8 @@ def monitor():
             check_high_traffic(log_window, args.threshold, zero_timestamp + TIME_OFFSET)
 
     # Print stats for last chunk
-    stats(log_chunk)
+    stats = Stats(log_chunk)
+    print(stats)
 
 
 if __name__ == '__main__':

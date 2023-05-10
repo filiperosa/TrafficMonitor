@@ -1,49 +1,71 @@
 from traffic_monitor.log_collection import LogCollection
+from typing import Dict
 
+class Stats:
+    """Stats for a list of logs"""
 
-def stats(logs: LogCollection):
-    """Compute stats for a list of logs"""
+    def __init__(self, logs: LogCollection = None):
+        """ Initialize stats """
+        self.sections: Dict[str, int] = {}
+        self.request_types: Dict[str, int] = {}
+        self.total_requests: int = 0
+        self.total_bytes: int = 0
+        self.first_timestamp: int = 0
+        self.last_timestamp: int = 0
 
-    sections = {}
-    request_types = {}
-    total_requests = len(logs)
-    total_bytes = 0
+        if logs:
+            self.compute(logs)
 
-    for log in logs:
-        # Count hits per section
-        if log.section in sections:
-            sections[log.section] += 1
-        else:
-            sections[log.section] = 1
+    def sort_sections(self):
+        """Sort sections by hits"""
+        self.sections = {k: v for k, v in sorted(self.sections.items(), key=lambda item: item[1], reverse=True)}
 
-        # Count requests per type
-        rtype = log.request.split()[0]
-        if rtype in request_types:
-            request_types[rtype] += 1
-        else:
-            request_types[rtype] = 1
+    def sort_request_types(self):
+        """Sort request types by hits"""
+        self.request_types = {k: v for k, v in sorted(self.request_types.items(), key=lambda item: item[1], reverse=True)}
 
-        total_bytes += log.bytes
+    def compute(self, logs: LogCollection):
+        """Compute stats for a list of logs"""
 
-    # Sort sections by hits
-    sections = {k: v for k, v in sorted(sections.items(), key=lambda item: item[1], reverse=True)}
+        for log in logs:
+            # Count hits per section
+            if log.section in self.sections:
+                self.sections[log.section] += 1
+            else:
+                self.sections[log.section] = 1
 
-    # Sort request types by hits
-    request_types = {k: v for k, v in sorted(request_types.items(), key=lambda item: item[1], reverse=True)}
+            # Count requests per type
+            rtype = log.request.split()[0]
+            if rtype in self.request_types:
+                self.request_types[rtype] += 1
+            else:
+                self.request_types[rtype] = 1
 
-    first_time = logs.get_oldest().timestamp
-    last_time = logs.get_newest().timestamp
-    print(f"Stats from seconds {first_time} to {last_time} ({last_time - first_time} seconds)")
+            self.total_bytes += log.bytes
+            self.total_requests += 1
 
-    print(f"Total requests: {total_requests}")
-    print(f"Total bytes: {total_bytes}")
+        # Sort sections by hits
+        self.sort_sections()
+
+        # Sort request types by hits
+        self.sort_request_types()
+
+        self.first_timestamp = logs.get_oldest().timestamp
+        self.last_timestamp = logs.get_newest().timestamp
+
+    def __str__(self) -> str:
+        if not self.total_requests:
+            return ""
+
+        return f"Stats from seconds {self.first_timestamp} to {self.last_timestamp} ({self.last_timestamp - self.first_timestamp} seconds)\n" + \
+            f"Total requests: {self.total_requests}\n" + \
+            f"Total bytes: {self.total_bytes}\n" + \
+            "Section hits:\n" + \
+            "\n".join([f"   {section}: {hits} hits, {hits/self.total_requests*100:.2f}%" for section, hits in self.sections.items()]) + \
+            "\nRequest types:\n" + \
+            "\n".join([f"   {rtype}: {hits} hits, {hits/self.total_requests*100:.2f}%" for rtype, hits in self.request_types.items()]) + \
+            "\n"
     
-    print("Section hits:")
-    for section, hits in sections.items():
-        print(f"   {section}: {hits} hits, {hits/total_requests*100:.2f}%")
-
-    print("Request types:")
-    for rtype, hits in request_types.items():
-        print(f"   {rtype}: {hits} hits, {hits/total_requests*100:.2f}%")
-
-    print()
+    def print(self):
+        """Print stats"""
+        print(self.__str__())
