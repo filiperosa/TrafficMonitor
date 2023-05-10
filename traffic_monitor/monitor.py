@@ -1,4 +1,3 @@
-
 import sys
 import argparse
 from typing import List, Tuple
@@ -7,9 +6,7 @@ from traffic_monitor.log_collection import LogCollection
 from traffic_monitor.stats import Stats
 from traffic_monitor.alerts import check_high_traffic
 
-TIME_OFFSET = 10
-
-# List to store logs from last 2 minutes or custom defined window
+# Rolling window with the last X minutes of logs (default 2 minutes)
 log_window = LogCollection()
 
 # Chunk of X seconds of logs (default 10 seconds)
