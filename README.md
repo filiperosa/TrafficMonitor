@@ -75,9 +75,10 @@ To run tests, we can use pytest
 - Input data is consumed line by line,to avoid loading the whole file into memory
 - Only a rolling window of logs is kept in memory with the default duration of 2 minutes, this can be changed with the --window argument
 - The rolling window is implemented as a custom list that keeps track of oldest and newest elements, when a new element is added, the oldest is removed and we look for the new oldest element only in the vicinity of the list head, this is done to avoid iterating over the whole list
-- Only relative timestamps are kept in memory to speed up prints and naked eye comparisons
 
 ## Potential Improvements
+
+- Make it work with a real time stream of logs
 
 - Add plotting and more visual presentation of the stats (e.g.: like htop improves the interface of top)
 
@@ -92,5 +93,4 @@ To run tests, we can use pytest
 
 - [@filiperosa](https://www.github.com/filiperosa)
 
-#### Time spent: aprox 5 active hours
 
